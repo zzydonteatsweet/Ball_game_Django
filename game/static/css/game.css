@@ -22,7 +22,13 @@
     text-align: center;
 }
 
-.Ac_game_menu_field_item: :hover {
+.Ac_game_menu_field_item :hover {
     transform: scale(1.2) ;
     transition: 100ms ;
+}
+
+.ac_game_playground {
+    width: 100%;
+    height: 100%;
+    user-select: none;
 }
