@@ -66,7 +66,7 @@ class Player extends AcGameObject {
             // let x = this.playground.players[0].x ;
             // let y = this.playground.players[0].y ;
             let player = this.playground.players[Math.floor(Math.random() * this.playground.players.length)] ;
-            while(player !== this) player = this.playground.players[Math.floor(Math.random() * this.playground.players.length)] ;
+            while(player === this) player = this.playground.players[Math.floor(Math.random() * this.playground.players.length)] ;
 
             let tx = player.x + player.vx * player.speed * player.time_delta / 1000 * 0.3 ;
             let ty = player.y + player.vy * player.speed * player.time_delta / 1000 * 0.3 ;
