@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-1nqv+t$$(m7gzmtge6z9-n)7ah6rs0qc#_5w$=9-qiv9-h!dh4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True 
 
-ALLOWED_HOSTS = ["47.122.1.177"]
+ALLOWED_HOSTS = ["47.122.1.177", "app1841.acapp.acwing.com.cn"]
 
 
 # Application definition
@@ -81,7 +81,16 @@ DATABASES = {
     }
 }
 
-
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    },
+}
+USER_AGENTS_CACHE = 'default'
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
