@@ -604,13 +604,45 @@ class FireBall extends AcGameObject {
 
     start() {
         let outer = this ;
-        this.getinfo() ;
-        this.add_listening_events() ;
-        outer.$acwing_login.click(function() {
-            outer.acwing_login() ;
-        }) ;
+        if (outer.platform==='ACAPP') {
+            this.acapp_getinfo() ;
+        }else {
+            this.getinfo() ;
+            this.add_listening_events() ;
+            outer.$acwing_login.click(function() {
+                outer.acwing_login() ;
+            }) ;
+        }
     }
 
+    acapp_login(appid, redirect_uri, scope, state) {
+        let outer = this ;
+        console.log("get into acapp_login") ;
+        this.root.AcWingOS.api.oauth2.authorize(appid, redirect_uri, scope, state, function(resp) {
+            console.log("called from acapp_login") ;
+            if(resp.result === "success") {
+                outer.username = resp.username ;
+                outer.photo = resp.photo ;
+                outer.$Settings.hide() ;
+                outer.root.$menu.show() ;
+            }
+        })
+
+    }
+    acapp_getinfo() {
+        let outer = this ;
+        console.log("acapp_getingo_Got") ;
+        $.ajax ({
+            url: "https://app1841.acapp.acwing.com.cn/settings/acwing/acapp/apply_code",
+            type:"GET",
+            success: function(resp) {
+                if (resp.result ==='success') {
+                    console.log("apply_code_acapp_Got_it") ;
+                    outer.acapp_login(resp.appid, resp.redirect_uri, resp.scope, resp.state) ;
+                }
+            }
+        }) ;
+    }
     acwing_login() {
         console.log("YES") ;
         $.ajax({
