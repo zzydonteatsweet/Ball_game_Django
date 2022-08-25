@@ -113,6 +113,8 @@ class Settings {
         this.$register_login = this.$register.find(".ac-game-settings-option");
         this.$acwing_login = this.$Settings.find(".ac-game-settings-acwing img") ;
         this.$register.hide() ;
+
+        // this.$Settings.hide() ;
         this.root.$ac_game_1.append(this.$Settings) ;
         this.start() ;
     }
@@ -133,9 +135,9 @@ class Settings {
 
     acapp_login(appid, redirect_uri, scope, state) {
         let outer = this ;
-        console.log("get into acapp_login") ;
+        // console.log("get into acapp_login") ;
         this.root.AcWingOS.api.oauth2.authorize(appid, redirect_uri, scope, state, function(resp) {
-            console.log("called from acapp_login") ;
+            // console.log("called from acapp_login") ;
             if(resp.result === "success") {
                 outer.username = resp.username ;
                 outer.photo = resp.photo ;
@@ -147,25 +149,25 @@ class Settings {
     }
     acapp_getinfo() {
         let outer = this ;
-        console.log("acapp_getingo_Got") ;
+        // console.log("acapp_getingo_Got") ;
         $.ajax ({
             url: "https://app1841.acapp.acwing.com.cn/settings/acwing/acapp/apply_code",
             type:"GET",
             success: function(resp) {
                 if (resp.result ==='success') {
-                    console.log("apply_code_acapp_Got_it") ;
+                    // console.log("apply_code_acapp_Got_it") ;
                     outer.acapp_login(resp.appid, resp.redirect_uri, resp.scope, resp.state) ;
                 }
             }
         }) ;
     }
     acwing_login() {
-        console.log("YES") ;
+        // console.log("YES") ;
         $.ajax({
             url:"https://app1841.acapp.acwing.com.cn/settings/acwing/web/apply_code",
             type: "GET",
             success: function(resp) {
-                console.log(resp) ;
+                // console.log(resp) ;
                 if(resp.result === "success") {
                     window.location.replace(resp.apply_code_url) ;
                 }
@@ -206,7 +208,7 @@ class Settings {
         let username = this.$register_username.val() ;
         let password = this.$register_password.val() ;
         let password_confirm = this.$register_password_confirm.val() ;
-        console.log("register_got_it") ;
+        // console.log("register_got_it") ;
         $.ajax({
             url: "https://app1841.acapp.acwing.com.cn/settings/register",
             type: "GET",

@@ -45,7 +45,7 @@ class AcGameMenu {
         });
 
         this.$setting.click(function(){
-            console.log("退出达到") ;
+            // console.log("退出达到") ;
             $.ajax({
                 url: "https://app1841.acapp.acwing.com.cn/settings/logout/",
                 type: "GET",
