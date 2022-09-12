@@ -34,14 +34,19 @@ class AcGameMenu {
 
     add_listenling_events() {
         let outer = this ;
+        outer.root.playground = new AcGamePlayground(outer.root);
+
         this.$single.click(function(){
             outer.hide() ;
-            outer.root.playground = new AcGamePlayground(outer.root);
-            outer.root.playground.show() ;
+            outer.root.playground.show("single") ;
         });
 
         this.$multi.click(function(){
+            outer.hide() ;
             console.log("multiplay begins") ;
+            // outer.root.playground.show("multi") ;
+            
+            outer.root.playground.show("multi") ;
         });
 
         this.$setting.click(function(){

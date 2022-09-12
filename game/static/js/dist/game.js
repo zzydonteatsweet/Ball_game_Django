@@ -34,14 +34,19 @@ class AcGameMenu {
 
     add_listenling_events() {
         let outer = this ;
+        outer.root.playground = new AcGamePlayground(outer.root);
+
         this.$single.click(function(){
             outer.hide() ;
-            outer.root.playground = new AcGamePlayground(outer.root);
-            outer.root.playground.show() ;
+            outer.root.playground.show("single") ;
         });
 
         this.$multi.click(function(){
+            outer.hide() ;
             console.log("multiplay begins") ;
+            // outer.root.playground.show("multi") ;
+            
+            outer.root.playground.show("multi") ;
         });
 
         this.$setting.click(function(){
@@ -74,8 +79,19 @@ export class AcGameObject {
 
                 this.has_called = false ;
                 this.time_delta = 0 ;
+                this.uuid = this.create_uuid() ;
+                // console.log(this.uuid) ;
         }
 
+        create_uuid() {
+                let res = "" ;
+                for(let i = 0 ; i < 10 ; i ++) {
+                        let x = parseInt(Math.floor(Math.random() * 10)) ;
+                        res += x ;
+                }
+
+                return res ;
+        }
         start() {
 
                 }
@@ -195,7 +211,8 @@ class Particle extends AcGameObject {
         this.ctx.fill() ;
     }
 }class Player extends AcGameObject {
-    constructor(playground, x, y, radius, color, speed, is_me) {
+    constructor(playground, x, y, radius, color, speed, character, username, photo) {
+        console.log(character, username, photo) ; 
         super() ;
         this.playground = playground ;
         this.ctx = this.playground.gamemap.ctx ;
@@ -205,7 +222,7 @@ class Particle extends AcGameObject {
         // console.log("半径", radius) ;
         this.color = color ;
         this.speed = speed ;
-        this.is_me = is_me ;
+        this.character = character ;
         this.vx = 1 ;
         this.vy = 1 ;
         this.eps = 0.01 ;
@@ -216,14 +233,11 @@ class Particle extends AcGameObject {
         this.damage_y = 0 ;
         this.friction = 0.8 ;
         this.spent_time = 0 ;
-
-        // console.log("scale", this.playground.scale) ;
-        // console.log("radius", this.radius) ;
-        // console.log(color, this.is_me) ;
-        if(this.is_me) {
+        this.photo = photo ;
+        this.username = username ;
+        if(this.character !== "robot") {
             this.img = new Image() ;
-            this.img.src = this.playground.root.Settings.photo ;
-            console.log(this.img.src) ;
+            this.img.src = this.photo ;
         }
 
         this.start() ;
@@ -231,9 +245,9 @@ class Particle extends AcGameObject {
 
 
     start() {
-        if(this.is_me) {
+        if(this.character == "me") {
             this.add_action_listener() ;
-        }else {
+        }else if(this.character == "robot") {
             let tx = Math.random() * this.playground.width / this.playground.scale ;
             let ty = Math.random() * this.playground.height / this.playground.scale ;
             // let tx = Math.random() * this.playground.width ;
@@ -254,18 +268,18 @@ class Particle extends AcGameObject {
             new Particle(this.playground,x, y, vx, vy, radius, color, speed, move_length ) ;
         }
         
-        // console.log("harm", damage_speed) ;
+        this.radius = Math.max(this.radius - damage_speed, 0) ;
+        if(this.radius < this.eps) {
+            this.destroy() ;
+            return false ;
+        }
+
         this.damage_x = Math.cos(angle) ;
         this.damage_y = Math.sin(angle) ;
         this.damage_speed = damage_speed * 100;
+        this.speed *= 0.8 ;
         // console.log("bef" ,this.radius) ;
-        this.radius = Math.max(this.radius - damage_speed, 0) ;
-        
-        if(this.radius < this.eps) {
-            this.destroy() ;
-        }
-        // console.log("aft", this.radius) ;
-        
+ 
     }
 
     update() {
@@ -276,7 +290,7 @@ class Particle extends AcGameObject {
     update_move() {
         this.spent_time += this.time_delta / 1000;
         // console.log(this.spent_time) ;
-        if(!this.is_me && Math.random() < 1 / 180 && this.spent_time > 5) {
+        if(this.character === "robot" && Math.random() < 1 / 180 && this.spent_time > 5) {
             // let x = this.playground.players[0].x ;
             // let y = this.playground.players[0].y ;
             let player = this.playground.players[Math.floor(Math.random() * this.playground.players.length)] ;
@@ -293,7 +307,6 @@ class Particle extends AcGameObject {
             return false ;
         }
         
-        // console.log("x",this.x, "y", this.y,"radius", this.radius) ;
         if(this.damage_speed > this.eps) {
             this.vx = 0 ;
             this.vy = 0 ;
@@ -307,7 +320,7 @@ class Particle extends AcGameObject {
                 this.road_length = 0 ;
                 this.vx = 0 ;
                 this.vy = 0 ;
-                if(!this.is_me) {
+                if(this.character === "robot") {
                     let tx = Math.random() * this.playground.width / this.playground.scale ;
                     let ty = Math.random() * this.playground.height / this.playground.scale ;
                     // let tx = Math.random() * this.playground.width;
@@ -332,7 +345,6 @@ class Particle extends AcGameObject {
         this.playground.gamemap.$canvas.mousedown(function(e) {
             const rec = outer.ctx.canvas.getBoundingClientRect() ;
             if(e.which === 3) {
-                console.log("move to it") ;
                 outer.move_to((e.clientX - rec.left) / outer.playground.scale, (e.clientY - rec.top) / outer.playground.scale ) ;
                 // outer.move_to(e.clientX - rec.left, e.clientY - rec.top) ;
             }else if(e.which === 1) {
@@ -353,7 +365,6 @@ class Particle extends AcGameObject {
     }
 
     shoot_firball(tx, ty) {
-        // console.log("shoot at",tx, ty) ;
         let x = this.x ;
         let y = this.y 
         // let radius = this.playground.height * 0.01 ;
@@ -362,13 +373,9 @@ class Particle extends AcGameObject {
         let angle = Math.atan2(ty - this.y, tx - this.x) ;
         let vx = Math.cos(angle), vy = Math.sin(angle) ;
         let color = "orange" ;
-        // let speed = this.playground.height * 0.5 ;
         let speed = 0.5 ;
-        // let move_length = this.playground.height * 1 ;
         let move_length = 1 ;
 
-        // console.log("height", this.playground.height) ;
-        // console.log("height * 0.01", this.playground.height * 0.01) ;
         new FireBall(this.playground, x, y, radius, vx, vy, speed, move_length, color, this, 0.01) ;
     }
 
@@ -390,10 +397,12 @@ class Particle extends AcGameObject {
         return Math.sqrt((c - a) * (c - a) + (d - b) * (d - b) ) ;
     }
     render() {
-        console.log("render") ;
+        // console.log("render") ;
         let scale = this.playground.scale ;
-        if(this.is_me) {
+        let outer = this ;
+        if(this.character !== "robot") {
             // console.log("render", this.x, this.y, this.radius, this.playground.scale) ;
+            // console.log("render_character",outer.character) ;
             this.ctx.save();
             this.ctx.beginPath();
             this.ctx.arc(this.x * scale, this.y * scale, this.radius * scale, 0, Math.PI * 2, false);
@@ -458,8 +467,8 @@ class FireBall extends AcGameObject {
 
         
         this.render() ;
-
     }
+
     get_dist(tx, ty) {
         return Math.sqrt((tx - this.x) * (tx - this.x) + (ty - this.y) * (ty - this.y))  ;
     }
@@ -472,7 +481,7 @@ class FireBall extends AcGameObject {
 
     attack(player) {
         let angle = Math.atan2(player.y - this.y, player.x - this.x) ;
-        console.log("damage", this.damage) ;
+        // console.log("damage", this.damage) ;
         player.is_attack(angle, this.damage) ;
         this.destroy() ;
 
@@ -484,11 +493,65 @@ class FireBall extends AcGameObject {
         this.ctx.fillStyle = this.color ;
         this.ctx.fill() ;   
     }
+}class MultiPlayerSocket {
+    constructor(playground) {
+        this.playground = playground ;
+        this.ws = new WebSocket("wss://app1841.acapp.acwing.com.cn/wss/multiplayer/") ;
+
+        this.start() ;
+    }
+
+    start() {
+        this.receive() ;
+    }
+
+    receive() {
+        let outer = this ;
+        // console.log("normal_receive yes")
+        this.ws.onmessage = function(e) {
+            let data = JSON.parse(e.data) ;
+            let uuid = data.uuid ;
+            if(uuid == outer.uuid) return false ;
+            let kevent = data.event ;
+            if(kevent === "create_player") {
+                outer.receive_create_player(uuid, data.username, data.photo) ;
+            }
+        }
+    }
+
+    receive_create_player(uuid, username, photo) {
+        let player = new Player(
+            this.playground,
+            this.playground.width / 2 / this.playground.scale,
+            this.playground.height / 2 /this.playground.scale,
+            0.05,
+            'white',
+            0.15,
+            "enemy",
+            username,
+            photo
+        )
+
+        player.uuid = uuid ;
+        this.playground.players.push(player) ;
+    }
+
+    send_create_player(username, photo) {
+        let outer = this ;
+        this.ws.send(JSON.stringify({
+            'event': "create_player",
+            'uuid': outer.uuid,
+            'username': username,
+            'photo': photo,
+        }))
+        // console.log("send_player_yes")
+    }
+
+    
 }class AcGamePlayground {
     constructor(root) {
         this.root = root ;
         this.$playground = $(`<div class = "ac_game_playground"></div>`) ;
-        console.log("ACgamePlayground got it") ;
         this.hide() ;
         
         this.root.$ac_game_1.append(this.$playground) ;
@@ -496,7 +559,6 @@ class FireBall extends AcGameObject {
     }
 
     start() {
-        // console.log("start it") ;
         let outer = this ;
         $(window).resize(function() {
             outer.resize() ;
@@ -509,7 +571,6 @@ class FireBall extends AcGameObject {
     }
 
     resize() {
-        // console.log("resize") ;
         let width = this.$playground.width() ;
         let height = this.$playground.height() ;
         let unit = Math.min(width/16, height/9) ;
@@ -522,20 +583,29 @@ class FireBall extends AcGameObject {
         }
     }
 
-    show() {
+    show(mode) {
         this.$playground.show() ;
 
-        // console.log("Show it") ;
-        this.resize() ;
         this.width = this.$playground.width() ;
         this.height = this.$playground.height() ;
         this.gamemap = new GameMap(this) ;
+        this.resize() ;
         this.players = [] ;
-        this.players.push(new Player(this, this.width / 2 / this.scale, 0.5, 0.05, "white", 0.15, true) ) ; // 玩家操控角色
+        this.players.push(new Player(this, this.width / 2 / this.scale, 0.5, 0.05, "white", 0.15, "me", this.root.Settings.username, 
+        this.root.Settings.photo) ) ; // 玩家操控角色
         // this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, "white", this.height * 0.15, true) ) ; // 玩家操控角色
-        for(let i = 0 ; i < 5 ; i ++) {
-            this.players.push(new Player(this, this.width / 2 / this.scale, 0.5, 0.05, this.get_color() , 0.15, false))  ;
-            // this.players.push(new Player(this, this.width / 2, this.height * 0.5, this.height * 0.05, this.get_color() , this.height * 0.15, false))  ;
+        if(mode === "single") {
+            for(let i = 0 ; i < 5 ; i ++) {
+                this.players.push(new Player(this, this.width / 2 / this.scale, 0.5, 0.05, this.get_color() , 0.15, "robot"))  ;
+                // this.players.push(new Player(this, this.width / 2, this.height * 0.5, this.height * 0.05, this.get_color() , this.height * 0.15, false))  ;
+            }
+        }else {
+            let outer = this ;
+            this.mps = new MultiPlayerSocket(this) ;
+            this.mps.uuid = this.players[0].uuid ;
+            this.mps.ws.onopen = function() {
+                outer.mps.send_create_player(outer.root.Settings.username, outer.root.Settings.photo) ;
+            }
         }
     }
 
@@ -861,7 +931,7 @@ class FireBall extends AcGameObject {
         this.$ac_game_1 = $('#' + id) ;
         this.menu = new AcGameMenu(this) ;
         this.Settings = new Settings(this) ;
-        // this.playgroud = new AcGamePlayground(this) ;
+        this.playgroud = new AcGamePlayground(this) ;
 
         this.start() ;
     }

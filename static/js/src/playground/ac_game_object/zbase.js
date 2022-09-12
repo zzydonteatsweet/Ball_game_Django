@@ -5,8 +5,19 @@ export class AcGameObject {
 
                 this.has_called = false ;
                 this.time_delta = 0 ;
+                this.uuid = this.create_uuid() ;
+                // console.log(this.uuid) ;
         }
 
+        create_uuid() {
+                let res = "" ;
+                for(let i = 0 ; i < 10 ; i ++) {
+                        let x = parseInt(Math.floor(Math.random() * 10)) ;
+                        res += x ;
+                }
+
+                return res ;
+        }
         start() {
 
                 }

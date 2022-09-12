@@ -45,8 +45,8 @@ class FireBall extends AcGameObject {
 
         
         this.render() ;
-
     }
+
     get_dist(tx, ty) {
         return Math.sqrt((tx - this.x) * (tx - this.x) + (ty - this.y) * (ty - this.y))  ;
     }
@@ -59,7 +59,7 @@ class FireBall extends AcGameObject {
 
     attack(player) {
         let angle = Math.atan2(player.y - this.y, player.x - this.x) ;
-        console.log("damage", this.damage) ;
+        // console.log("damage", this.damage) ;
         player.is_attack(angle, this.damage) ;
         this.destroy() ;
 

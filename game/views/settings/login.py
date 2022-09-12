@@ -2,7 +2,7 @@ from django.http import JsonResponse
 from django.contrib.auth import authenticate, login
 
 def sigin(request):
-    print("GGGGGGGGoooooooTTTTTT")
+    # print("GGGGGGGGoooooooTTTTTT")
     data = request.GET
     username = data.get('username')
     password = data.get('password')
