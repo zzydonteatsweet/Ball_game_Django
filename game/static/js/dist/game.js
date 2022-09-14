@@ -43,7 +43,6 @@ class AcGameMenu {
 
         this.$multi.click(function(){
             outer.hide() ;
-            console.log("multiplay begins") ;
             // outer.root.playground.show("multi") ;
             
             outer.root.playground.show("multi") ;
@@ -212,14 +211,12 @@ class Particle extends AcGameObject {
     }
 }class Player extends AcGameObject {
     constructor(playground, x, y, radius, color, speed, character, username, photo) {
-        console.log(character, username, photo) ; 
         super() ;
         this.playground = playground ;
         this.ctx = this.playground.gamemap.ctx ;
         this.x = x ;
         this.y = y ;
         this.radius = radius ;
-        // console.log("半径", radius) ;
         this.color = color ;
         this.speed = speed ;
         this.character = character ;
@@ -235,6 +232,8 @@ class Particle extends AcGameObject {
         this.spent_time = 0 ;
         this.photo = photo ;
         this.username = username ;
+        // console.log("player_created",this.username, this.uuid) ;
+        this.fireballs = [] ;
         if(this.character !== "robot") {
             this.img = new Image() ;
             this.img.src = this.photo ;
@@ -253,6 +252,16 @@ class Particle extends AcGameObject {
             // let tx = Math.random() * this.playground.width ;
             // let ty = Math.random() * this.playground.height ;
             this.move_to(tx, ty) ;
+        }
+    }
+
+    destroy_fireball(uuid) {
+        for(let i = 0 ; i < this.fireballs.length ; i ++) {
+            let fireball = this.fireballs[i] ;
+            if(fireball.uuid == uuid) {
+                fireball.destroy() ;
+                break ;
+            }
         }
     }
 
@@ -282,6 +291,13 @@ class Particle extends AcGameObject {
  
     }
 
+    receive_attack(x, y, angle, damage, ball_uuid, attacker) {
+        console.log("receive_attack receive") ;
+        attacker.destroy_fireball(ball_uuid) ;
+        this.x = x, this.y = y ;
+        this.is_attack(angle, damage) ;
+    }
+
     update() {
         this.update_move() ;
         this.render() ;
@@ -298,7 +314,7 @@ class Particle extends AcGameObject {
 
             let tx = player.x + player.vx * player.speed * player.time_delta / 1000 * 0.3 ;
             let ty = player.y + player.vy * player.speed * player.time_delta / 1000 * 0.3 ;
-            this.shoot_firball(tx, ty) ;
+            this.shoot_fireball(tx, ty) ;
 
         }
         
@@ -317,7 +333,7 @@ class Particle extends AcGameObject {
             this.damage_speed *= this.friction ;
         }else {
             if(this.road_length < this.eps) {
-                this.road_length = 0 ;
+                this.road_length = 0 ; 
                 this.vx = 0 ;
                 this.vy = 0 ;
                 if(this.character === "robot") {
@@ -345,11 +361,23 @@ class Particle extends AcGameObject {
         this.playground.gamemap.$canvas.mousedown(function(e) {
             const rec = outer.ctx.canvas.getBoundingClientRect() ;
             if(e.which === 3) {
-                outer.move_to((e.clientX - rec.left) / outer.playground.scale, (e.clientY - rec.top) / outer.playground.scale ) ;
+                let tx = (e.clientX - rec.left) / outer.playground.scale ;
+                let ty = (e.clientY - rec.top) / outer.playground.scale ;
+                outer.move_to(tx, ty) ;
+                // console.log("mode", outer.playground.mode) ;
+                if(outer.playground.mode === "multi") {
+                    outer.playground.mps.send_move_to(tx, ty) ;
+                }
                 // outer.move_to(e.clientX - rec.left, e.clientY - rec.top) ;
             }else if(e.which === 1) {
                 if(outer.cur_skill === "fireball") {
-                    outer.shoot_firball( (e.clientX - rec.left) / outer.playground.scale, (e.clientY - rec.top) / outer.playground.scale ) ;
+                    let tx = (e.clientX - rec.left) / outer.playground.scale ;
+                    let ty = (e.clientY - rec.top) / outer.playground.scale ;
+                    let fireball = outer.shoot_fireball(tx, ty) ;
+
+                    if(outer.playground.mode === "multi") {
+                        outer.playground.mps.send_shoot_fireball(tx, ty, fireball.uuid) ;
+                    }
                     // outer.shoot_firball(e.clientX - rec.left, e.clientY - rec.top) ;                   
                 }
 
@@ -364,7 +392,7 @@ class Particle extends AcGameObject {
         })
     }
 
-    shoot_firball(tx, ty) {
+    shoot_fireball(tx, ty) {
         let x = this.x ;
         let y = this.y 
         // let radius = this.playground.height * 0.01 ;
@@ -376,7 +404,9 @@ class Particle extends AcGameObject {
         let speed = 0.5 ;
         let move_length = 1 ;
 
-        new FireBall(this.playground, x, y, radius, vx, vy, speed, move_length, color, this, 0.01) ;
+        let fireball = new FireBall(this.playground, x, y, radius, vx, vy, speed, move_length, color, this, 0.01) ;
+        this.fireballs.push(fireball) ;
+        return fireball ;
     }
 
     move_to(x, y) {
@@ -390,19 +420,19 @@ class Particle extends AcGameObject {
         for(let i = 0 ; i < this.playground.players.length ; i ++) {
             if(this.playground.players[i] === this) {
                 this.playground.players.splice(i, 1) ;
+                break ;
             }
         }
     }
+
     get_dist(a, b, c, d) {
         return Math.sqrt((c - a) * (c - a) + (d - b) * (d - b) ) ;
     }
+
     render() {
-        // console.log("render") ;
         let scale = this.playground.scale ;
         let outer = this ;
         if(this.character !== "robot") {
-            // console.log("render", this.x, this.y, this.radius, this.playground.scale) ;
-            // console.log("render_character",outer.character) ;
             this.ctx.save();
             this.ctx.beginPath();
             this.ctx.arc(this.x * scale, this.y * scale, this.radius * scale, 0, Math.PI * 2, false);
@@ -448,15 +478,24 @@ class FireBall extends AcGameObject {
         if(this.move_length < this.eps) {
             this.destroy() ;
             return false ;
-
-        }else {
-            let moved = Math.min(this.move_length, this.speed * this.time_delta / 1000) ;
-            this.x += this.vx * moved ;
-            this.y += this.vy * moved ;
-            this.move_length -= moved ;
-
         }
 
+        this.update_move() ;
+        if(this.player.character !== "enemy") {
+            this.update_attack() ;
+        }
+        this.render() ;
+    }
+
+    update_move() {
+        let moved = Math.min(this.move_length, this.speed * this.time_delta / 1000) ;
+        this.x += this.vx * moved ;
+        this.y += this.vy * moved ;
+        this.move_length -= moved ;
+
+    }
+
+    update_attack() {
         for(let i = 0 ; i < this.playground.players.length ; i ++) {
             let player = this.playground.players[i] ;
             if(this.player != player && this.is_collision(player)) {
@@ -464,9 +503,6 @@ class FireBall extends AcGameObject {
                 return false ;
             }
         }
-
-        
-        this.render() ;
     }
 
     get_dist(tx, ty) {
@@ -480,11 +516,27 @@ class FireBall extends AcGameObject {
     }
 
     attack(player) {
+        let outer = this ;
         let angle = Math.atan2(player.y - this.y, player.x - this.x) ;
         // console.log("damage", this.damage) ;
         player.is_attack(angle, this.damage) ;
+        if(outer.playground.mode === "multi") {
+            console.log("multi_attack", outer.player.uuid, player.uuid) ;
+            outer.playground.mps.send_attack(player.uuid, player.x, player.y, angle, this.damage, this.uuid) ;
+        }
         this.destroy() ;
 
+    }
+
+    on_destroy() {
+        let fireballs = this.player.fireballs ;
+        let outer = this ;
+        for(let i = 0 ; i < fireballs.length ; i ++) {
+            if(fireballs[i] == this) {
+                fireballs.splice(i, 1) ;
+                break;
+            }
+        }
     }
     render() {
         let scale = this.playground.scale ;
@@ -507,14 +559,20 @@ class FireBall extends AcGameObject {
 
     receive() {
         let outer = this ;
-        // console.log("normal_receive yes")
         this.ws.onmessage = function(e) {
             let data = JSON.parse(e.data) ;
             let uuid = data.uuid ;
             if(uuid == outer.uuid) return false ;
             let kevent = data.event ;
+            console.log(kevent) ;
             if(kevent === "create_player") {
                 outer.receive_create_player(uuid, data.username, data.photo) ;
+            }else if(kevent === "move_to") {
+                outer.receive_move_to(uuid, data.tx, data.ty) ;
+            }else if(kevent === "shoot_fireball") {
+                outer.receive_shoot_fireball(uuid, data.tx, data.ty, data.ball_uuid) ;
+            }else if(kevent === 'attack') {
+                outer.receive_attack(uuid, data.attacke_uuid, data.x, data.y, data.angle, data.damage, data.ball_uuid)
             }
         }
     }
@@ -534,8 +592,23 @@ class FireBall extends AcGameObject {
 
         player.uuid = uuid ;
         this.playground.players.push(player) ;
+
+        let outer = this ;
+        for(let k = 0 ; k < outer.playground.players.length ; k ++) {
+                console.log("uuid", k,  outer.playground.players[k].uuid) ;
+            }
     }
 
+    get_player(uuid) {
+        let players = this.playground.players ;
+        for(let i = 0 ; i < players.length ; i ++) {
+            let player = players[i] ;
+            if(player.uuid == uuid) {
+                return player ;
+            }
+        }
+        return null ;
+    }
     send_create_player(username, photo) {
         let outer = this ;
         this.ws.send(JSON.stringify({
@@ -547,7 +620,85 @@ class FireBall extends AcGameObject {
         // console.log("send_player_yes")
     }
 
-    
+    send_move_to(tx, ty) {
+        // console.log("send_move_to") ;
+        let outer = this ;
+        this.ws.send(JSON.stringify({
+            'event': "move_to",
+            'uuid': outer.uuid,
+            'tx': tx,
+            'ty': ty,
+        }))
+    } 
+
+    receive_move_to(uuid, tx, ty) {
+        // console.log("receive_move_to") ;
+        let player = this.get_player(uuid) ;
+        if(player) {
+            player.move_to(tx, ty) ;
+        }
+    }
+
+    send_shoot_fireball(tx, ty, ball_uuid) {
+        let outer = this ;
+        this.ws.send(JSON.stringify({
+            'event': 'shoot_fireball',
+            'uuid': outer.uuid,
+            'tx': tx, 
+            'ty': ty,
+            'ball_uuid': ball_uuid,
+        })) ;
+    }
+
+    destory_fireball(uuid) {
+        let outer = this ;
+        for(let i = 0 ; i < this.fireballs.length ; i ++) {
+            let fireball = outer.fireballs[i] ;
+            if(fireball.uuid == uuid) {
+                fireball.destroy() ;
+                break ; 
+            }
+        }
+    }
+    receive_shoot_fireball(uuid, tx, ty, ball_uuid) {
+        let player = this.get_player(uuid) ;
+        if(player) {
+            let fireball = player.shoot_fireball(tx, ty) ;
+            fireball.uuid = ball_uuid ;
+        }
+    }
+
+    send_attack(attackee_uuid, x, y, angle, damage, ball_uuid) {
+        // console.log("send_attack") ;
+        let outer = this ;
+        console.log("send_attacker_uuid", outer.uuid) ;
+        console.log("sendattackee_uuid", attackee_uuid) ;
+        
+        this.ws.send(JSON.stringify({
+            'event': 'attack',
+            'uuid': outer.uuid,
+            'attacke_uuid': attackee_uuid,
+            'x': x,
+            'y': y,
+            'angle': angle,
+            'ball_uuid': ball_uuid,
+            'damage': damage,
+        }))
+    }
+
+    receive_attack(uuid, attacke_uuid, x, y, angle, damage, ball_uuid) {
+        // console.log("receive_attack") ;
+        console.log("receive_attacker_uuid", uuid) ;
+        console.log("receive_attackee_uuid", attacke_uuid) ;
+        let attacker = this.get_player(uuid) ;
+        let attackee = this.get_player(attacke_uuid) ;
+        console.log("attacker",attacker.uuid, "attackee ",uuid) ;
+
+        if(attacker && attackee) {
+            attackee.receive_attack(x, y, angle, damage, ball_uuid, attacker) ;
+        }
+    }
+
 }class AcGamePlayground {
     constructor(root) {
         this.root = root ;
@@ -585,7 +736,8 @@ class FireBall extends AcGameObject {
 
     show(mode) {
         this.$playground.show() ;
-
+        
+        this.mode = mode ;
         this.width = this.$playground.width() ;
         this.height = this.$playground.height() ;
         this.gamemap = new GameMap(this) ;
@@ -603,6 +755,7 @@ class FireBall extends AcGameObject {
             let outer = this ;
             this.mps = new MultiPlayerSocket(this) ;
             this.mps.uuid = this.players[0].uuid ;
+            
             this.mps.ws.onopen = function() {
                 outer.mps.send_create_player(outer.root.Settings.username, outer.root.Settings.photo) ;
             }
@@ -842,22 +995,25 @@ class FireBall extends AcGameObject {
     }
 
     logout_on_remote() {
-        if(this.platform == 'ACAPP') return false ;
-        let outer = this ;
-        this.$login_error_message.empty() ;
+        if(this.platform == 'ACAPP') {
+            this.root.AcWingOS.api.window.close() ;
+        }else {
+            let outer = this ;
+            this.$login_error_message.empty() ;
 
-        $.ajax({
-            url: "https://app1841.acapp.acwing.com.cn/settings/logout", 
-            type: "GET",
-            success: function(resp) {
-                if(resp.result == "success") {
-                    location.reload() ;
-                }else {
-                    outer.$login_error_message.html(resp.result) ;
+            $.ajax({
+                url: "https://app1841.acapp.acwing.com.cn/settings/logout", 
+                type: "GET",
+                success: function(resp) {
+                    if(resp.result == "success") {
+                        location.reload() ;
+                    }else {
+                        outer.$login_error_message.html(resp.result) ;
+                    }
                 }
-            }
-            
-        })
+                
+            })
+        }
     }
 
     login_on_remote() {

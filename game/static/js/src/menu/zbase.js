@@ -43,7 +43,6 @@ class AcGameMenu {
 
         this.$multi.click(function(){
             outer.hide() ;
-            console.log("multiplay begins") ;
             // outer.root.playground.show("multi") ;
             
             outer.root.playground.show("multi") ;

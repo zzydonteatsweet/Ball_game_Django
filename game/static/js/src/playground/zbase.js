@@ -35,7 +35,8 @@ class AcGamePlayground {
 
     show(mode) {
         this.$playground.show() ;
-
+        
+        this.mode = mode ;
         this.width = this.$playground.width() ;
         this.height = this.$playground.height() ;
         this.gamemap = new GameMap(this) ;
@@ -53,6 +54,7 @@ class AcGamePlayground {
             let outer = this ;
             this.mps = new MultiPlayerSocket(this) ;
             this.mps.uuid = this.players[0].uuid ;
+            
             this.mps.ws.onopen = function() {
                 outer.mps.send_create_player(outer.root.Settings.username, outer.root.Settings.photo) ;
             }

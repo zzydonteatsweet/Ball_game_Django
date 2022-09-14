@@ -228,22 +228,25 @@ class Settings {
     }
 
     logout_on_remote() {
-        if(this.platform == 'ACAPP') return false ;
-        let outer = this ;
-        this.$login_error_message.empty() ;
+        if(this.platform == 'ACAPP') {
+            this.root.AcWingOS.api.window.close() ;
+        }else {
+            let outer = this ;
+            this.$login_error_message.empty() ;
 
-        $.ajax({
-            url: "https://app1841.acapp.acwing.com.cn/settings/logout", 
-            type: "GET",
-            success: function(resp) {
-                if(resp.result == "success") {
-                    location.reload() ;
-                }else {
-                    outer.$login_error_message.html(resp.result) ;
+            $.ajax({
+                url: "https://app1841.acapp.acwing.com.cn/settings/logout", 
+                type: "GET",
+                success: function(resp) {
+                    if(resp.result == "success") {
+                        location.reload() ;
+                    }else {
+                        outer.$login_error_message.html(resp.result) ;
+                    }
                 }
-            }
-            
-        })
+                
+            })
+        }
     }
 
     login_on_remote() {

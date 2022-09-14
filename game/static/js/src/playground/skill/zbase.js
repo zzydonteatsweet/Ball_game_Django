@@ -26,15 +26,24 @@ class FireBall extends AcGameObject {
         if(this.move_length < this.eps) {
             this.destroy() ;
             return false ;
-
-        }else {
-            let moved = Math.min(this.move_length, this.speed * this.time_delta / 1000) ;
-            this.x += this.vx * moved ;
-            this.y += this.vy * moved ;
-            this.move_length -= moved ;
-
         }
 
+        this.update_move() ;
+        if(this.player.character !== "enemy") {
+            this.update_attack() ;
+        }
+        this.render() ;
+    }
+
+    update_move() {
+        let moved = Math.min(this.move_length, this.speed * this.time_delta / 1000) ;
+        this.x += this.vx * moved ;
+        this.y += this.vy * moved ;
+        this.move_length -= moved ;
+
+    }
+
+    update_attack() {
         for(let i = 0 ; i < this.playground.players.length ; i ++) {
             let player = this.playground.players[i] ;
             if(this.player != player && this.is_collision(player)) {
@@ -42,9 +51,6 @@ class FireBall extends AcGameObject {
                 return false ;
             }
         }
-
-        
-        this.render() ;
     }
 
     get_dist(tx, ty) {
@@ -58,11 +64,27 @@ class FireBall extends AcGameObject {
     }
 
     attack(player) {
+        let outer = this ;
         let angle = Math.atan2(player.y - this.y, player.x - this.x) ;
         // console.log("damage", this.damage) ;
         player.is_attack(angle, this.damage) ;
+        if(outer.playground.mode === "multi") {
+            console.log("multi_attack", outer.player.uuid, player.uuid) ;
+            outer.playground.mps.send_attack(player.uuid, player.x, player.y, angle, this.damage, this.uuid) ;
+        }
         this.destroy() ;
 
+    }
+
+    on_destroy() {
+        let fireballs = this.player.fireballs ;
+        let outer = this ;
+        for(let i = 0 ; i < fireballs.length ; i ++) {
+            if(fireballs[i] == this) {
+                fireballs.splice(i, 1) ;
+                break;
+            }
+        }
     }
     render() {
         let scale = this.playground.scale ;
