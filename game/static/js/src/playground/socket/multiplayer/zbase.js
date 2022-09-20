@@ -26,6 +26,9 @@ class MultiPlayerSocket {
                 outer.receive_shoot_fireball(uuid, data.tx, data.ty, data.ball_uuid) ;
             }else if(kevent === 'attack') {
                 outer.receive_attack(uuid, data.attacke_uuid, data.x, data.y, data.angle, data.damage, data.ball_uuid)
+            }else if(kevent === "blink") {
+                console.log("blink") ;
+                outer.receive_blink(data.tx, data.ty, uuid) ;
             }
         }
     }
@@ -46,10 +49,7 @@ class MultiPlayerSocket {
         player.uuid = uuid ;
         this.playground.players.push(player) ;
 
-        let outer = this ;
-        for(let k = 0 ; k < outer.playground.players.length ; k ++) {
-                console.log("uuid", k,  outer.playground.players[k].uuid) ;
-            }
+    
     }
 
     get_player(uuid) {
@@ -74,7 +74,6 @@ class MultiPlayerSocket {
     }
 
     send_move_to(tx, ty) {
-        // console.log("send_move_to") ;
         let outer = this ;
         this.ws.send(JSON.stringify({
             'event': "move_to",
@@ -85,7 +84,6 @@ class MultiPlayerSocket {
     } 
 
     receive_move_to(uuid, tx, ty) {
-        // console.log("receive_move_to") ;
         let player = this.get_player(uuid) ;
         if(player) {
             player.move_to(tx, ty) ;
@@ -103,6 +101,22 @@ class MultiPlayerSocket {
         })) ;
     }
 
+    send_blink(tx, ty) {
+        let outer = this ;
+        this.ws.send(JSON.stringify({
+            'event': 'blink',
+            'uuid': outer.uuid,
+            'tx': tx,
+            'ty': ty,
+        })) ;
+    }
+
+    receive_blink(tx, ty, uuid) {
+        let player = this.get_player(uuid) ;
+        if(player) {
+            player.blink(tx, ty) ;
+        }
+    }
     destory_fireball(uuid) {
         let outer = this ;
         for(let i = 0 ; i < this.fireballs.length ; i ++) {
@@ -124,8 +138,6 @@ class MultiPlayerSocket {
     send_attack(attackee_uuid, x, y, angle, damage, ball_uuid) {
         // console.log("send_attack") ;
         let outer = this ;
-        console.log("send_attacker_uuid", outer.uuid) ;
-        console.log("sendattackee_uuid", attackee_uuid) ;
         
         this.ws.send(JSON.stringify({
             'event': 'attack',
@@ -140,12 +152,11 @@ class MultiPlayerSocket {
     }
 
     receive_attack(uuid, attacke_uuid, x, y, angle, damage, ball_uuid) {
-        // console.log("receive_attack") ;
-        console.log("receive_attacker_uuid", uuid) ;
-        console.log("receive_attackee_uuid", attacke_uuid) ;
+        // console.log("receive_attacker_uuid", uuid) ;
+        // console.log("receive_attackee_uuid", attacke_uuid) ;
         let attacker = this.get_player(uuid) ;
         let attackee = this.get_player(attacke_uuid) ;
-        console.log("attacker",attacker.uuid, "attackee ",uuid) ;
+        // console.log("attacker",attacker.uuid, "attackee ",uuid) ;
 
         if(attacker && attackee) {
             attackee.receive_attack(x, y, angle, damage, ball_uuid, attacker) ;

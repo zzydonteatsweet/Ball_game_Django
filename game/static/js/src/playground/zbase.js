@@ -40,6 +40,11 @@ class AcGamePlayground {
         this.width = this.$playground.width() ;
         this.height = this.$playground.height() ;
         this.gamemap = new GameMap(this) ;
+
+        this.state = "wating" //  从wating 变成fighting
+        this.notice_board = new NoticeBoard(this) ;
+        this.player_count = 0 ;
+
         this.resize() ;
         this.players = [] ;
         this.players.push(new Player(this, this.width / 2 / this.scale, 0.5, 0.05, "white", 0.15, "me", this.root.Settings.username, 
