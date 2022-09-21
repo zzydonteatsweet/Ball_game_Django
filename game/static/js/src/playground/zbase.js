@@ -56,6 +56,7 @@ class AcGamePlayground {
                 // this.players.push(new Player(this, this.width / 2, this.height * 0.5, this.height * 0.05, this.get_color() , this.height * 0.15, false))  ;
             }
         }else {
+            this.chatfield = new Chat_field(this) ;
             let outer = this ;
             this.mps = new MultiPlayerSocket(this) ;
             this.mps.uuid = this.players[0].uuid ;

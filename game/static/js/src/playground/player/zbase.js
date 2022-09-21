@@ -219,11 +219,23 @@ class Player extends AcGameObject {
             }
         }) ;
 
-        $(window).keydown(function(e) {
+        this.playground.gamemap.$canvas.keydown(function(e) {
+            console.log(e.which) ;
+            if(e.which == "13") {  //  回车
+                if(outer.playground.mode === "multi") {
+                    outer.playground.chatfield.show_input() ;
+                    return false ;
+                }
+
+            }else if(e.which ==  "27") {  //  esc
+                if(outer.playground.mode === "multi") {
+                    outer.playground.chatfield.hide_input() ;
+                    return false ;
+                }
+            }
             if(outer.playground.state !== "fighting") {
                 return true ;
             }
-
             if(e.which == "81") { //  发射火球
                 if(outer.fireball_time > outer.eps) {
                     return true ;
@@ -251,6 +263,7 @@ class Player extends AcGameObject {
         this.blink_time = 5 ;
         this.road_length = 0 ;
     }
+
     shoot_fireball(tx, ty) {
         let x = this.x ;
         let y = this.y 
